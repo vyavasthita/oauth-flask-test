@@ -10,9 +10,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(config_by_name[environment])
 
-    from app.routes.auth import auth_blueprint
+    from app.routes.auth import github_blueprint
 
-    app.register_blueprint(auth_blueprint)
+    app.register_blueprint(github_blueprint, url_prefix="/login")
+
     return app
 
 

@@ -1,35 +1,20 @@
-from flask.blueprints import Blueprint
-from flask import render_template, request
+from flask import redirect, url_for
+from flask_dance.contrib.github import make_github_blueprint, github
 from app import configuration
-from app.utils.oauth_helper import get_access_token, get_user_data
 
 
-auth_blueprint = Blueprint("auth", __name__, template_folder="templates")
+github_blueprint = make_github_blueprint(
+    client_id=configuration.CLIENT_ID, client_secret=configuration.CLIENT_SECRET
+)
 
 
-@auth_blueprint.route("/index", methods=["GET"])
-@auth_blueprint.route("/", methods=["GET"])
-def index():
-    data = {"data": "Hello from github oauth json endpoint"}
+@github_blueprint.route("/")
+def login_to_github():
+    if not github.authorized:
+        return redirect(url_for("github.login"))
+    else:
+        print("Already Authorized")
 
-    return data, 200
+    res = github.get("/user")
 
-
-@auth_blueprint.route("/home", methods=["GET"])
-def home() -> str:
-    """Provide the user with the option to register with GitHub."""
-    return render_template("home.html", client_id=configuration.CLIENT_ID), 200
-
-
-@auth_blueprint.route("/github/callback", methods=["GET"])
-def github_callback():
-    """Authenticate the user and displays their data."""
-    args = request.args
-    request_token = args.get("code")
-
-    CLIENT_ID = configuration.CLIENT_ID
-    CLIENT_SECRET = configuration.CLIENT_SECRET
-    access_token = get_access_token(CLIENT_ID, CLIENT_SECRET, request_token)
-
-    user_data = get_user_data(access_token)
-    return render_template("dashboard.html", userData=user_data)
+    return f"You are {res.json()['login']} on GitHub"
